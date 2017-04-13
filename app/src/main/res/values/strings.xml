@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TestApplication2</string>
+    <string name="appbar_title">Map</string>
+    <string name="title_activity_maps">Map</string>
+
+    <string name="main_activity_btn_search">SEARCH</string>
+    <string name="main_activity_user_input_hint">Input location</string>
+</resources>
