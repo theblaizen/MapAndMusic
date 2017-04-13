@@ -14,7 +14,6 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 
 
 /**
@@ -53,6 +52,8 @@ public class MusicPlayerFragment extends Fragment {
         fragmentPlayerBtnPlay.setOnClickListener(buttonPlayListener());
         fragmentPlayerBtnPause.setOnClickListener(buttonPauseListener());
         fragmentPlayerSeekBar.setOnTouchListener(seekBarListener());
+        fragmentPlayerMediaPlayer.start();
+        startPlayProgressUpdater();
     }
 
     @Override
@@ -104,7 +105,9 @@ public class MusicPlayerFragment extends Fragment {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (fragmentPlayerMediaPlayer.isPlaying()) {
+                    fragmentPlayerMediaPlayer.pause();
                     fragmentPlayerMediaPlayer.seekTo(fragmentPlayerSeekBar.getProgress());
+                    fragmentPlayerMediaPlayer.start();
                 }
                 return false;
             }
@@ -120,7 +123,7 @@ public class MusicPlayerFragment extends Fragment {
                     startPlayProgressUpdater();
                 }
             };
-            handler.postDelayed(notification,1000);
+            handler.postDelayed(notification, 1000);
         }
     }
 
