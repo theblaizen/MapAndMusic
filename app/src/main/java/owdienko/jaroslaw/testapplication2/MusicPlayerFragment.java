@@ -65,8 +65,7 @@ public class MusicPlayerFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         fragmentPlayerMediaPlayer.pause();
-        fragmentPlayerMediaPlayer = null;
-        musicList = null;
+
     }
 
     private void initUIElements() {
