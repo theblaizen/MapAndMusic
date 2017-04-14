@@ -26,59 +26,57 @@ public class MusicPlayerFragment extends Fragment {
     private MediaPlayer fragmentPlayerMediaPlayer;
     private SeekBar fragmentPlayerSeekBar;
 
-    private int[] musicList = {R.raw.ramin_djawadi_westworld_ost, R.raw.kaleo_way_down_we_go, R.raw.the_lord_of_the_rings_the_shire};
+    private int[] musicList = {
+            R.raw.ramin_djawadi_westworld_ost,
+            R.raw.kaleo_way_down_we_go,
+            R.raw.the_lord_of_the_rings_the_shire,
+            R.raw.bach_suite_cello_solo_in_g_major,
+            R.raw.dustin_ohalloran_opus,
+            R.raw.hans_zimmer_interstellar_main_theme,
+            R.raw.sting_shape_of_my_heart,
+            R.raw.tstm_was_it_a_dream
+    };
 
     private final Handler handler = new Handler();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, "FRAGMENT created!");
     }
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.music_player_view, container, false);
-
+        View fragmentView = inflater.inflate(R.layout.music_player_view, container, false);
+        initUIElements(fragmentView);
+        fragmentPlayerBtnPlay.setOnClickListener(buttonPlayListener());
+        fragmentPlayerBtnPause.setOnClickListener(buttonPauseListener());
+        fragmentPlayerSeekBar.setOnTouchListener(seekBarListener());
+        return fragmentView;
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, "fragment onViewCreated ");
-        initUIElements();
-
-        fragmentPlayerBtnPlay.setOnClickListener(buttonPlayListener());
-        fragmentPlayerBtnPause.setOnClickListener(buttonPauseListener());
-        fragmentPlayerSeekBar.setOnTouchListener(seekBarListener());
         fragmentPlayerMediaPlayer.start();
         startPlayProgressUpdater();
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         fragmentPlayerMediaPlayer.pause();
-
     }
 
-    private void initUIElements() {
-        if (getView() != null) {
-            fragmentPlayerBtnPlay = (ImageButton) getView().findViewById(R.id.play_button);
-            fragmentPlayerBtnPause = (ImageButton) getView().findViewById(R.id.pause_button);
-            fragmentPlayerSeekBar = (SeekBar) getView().findViewById(R.id.seekBar);
-            Random random = new Random();
-            Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, "fragment random " + String.valueOf(random.nextInt(3)));
-            fragmentPlayerMediaPlayer = MediaPlayer.create(getContext(), musicList[random.nextInt(3)]);
-            fragmentPlayerSeekBar.setMax(fragmentPlayerMediaPlayer.getDuration());
-        }
+
+    private void initUIElements(View fragmentView) {
+        fragmentPlayerBtnPlay = (ImageButton) fragmentView.findViewById(R.id.play_button);
+        fragmentPlayerBtnPause = (ImageButton) fragmentView.findViewById(R.id.pause_button);
+        fragmentPlayerSeekBar = (SeekBar) fragmentView.findViewById(R.id.seekBar);
+
+        fragmentPlayerMediaPlayer = MediaPlayer.create(getContext(), musicList[new Random().nextInt(musicList.length)]);
+        fragmentPlayerSeekBar.setMax(fragmentPlayerMediaPlayer.getDuration());
     }
 
     private View.OnClickListener buttonPlayListener() {
@@ -123,9 +121,8 @@ public class MusicPlayerFragment extends Fragment {
                     startPlayProgressUpdater();
                 }
             };
-            handler.postDelayed(notification, 1000);
+            handler.postDelayed(notification, 100);
         }
     }
-
 
 }

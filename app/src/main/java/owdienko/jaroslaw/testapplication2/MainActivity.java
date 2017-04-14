@@ -55,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private SupportMapFragment mapFragment;
     private Fragment panel;
     private FragmentTransaction transaction;
+
+    //position of previous music panel (using for removing)
     private static int position_of = 0;
 
 
@@ -67,6 +69,70 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mainActivityButtonSearch.setOnClickListener(MAButtonSearchListener());
         mainActivityButtonSearch.setOnLongClickListener(MAButtonSearchLongListener());
+    }
+
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            this, R.raw.style_json));
+
+            if (!success) {
+                Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, "Can't find style. Error: ", e);
+        }
+
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+
+            return;
+        }
+        mMap.setMyLocationEnabled(true);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        mMap.getUiSettings().setRotateGesturesEnabled(false);
+
+        //positioning camera to country(Ukraine) on map
+        positionOfTheMap();
+
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                int position = (int) (marker.getTag());
+                marker.showInfoWindow();
+
+                // removing old music panel from screen
+                removeMusicPanel();
+
+                //adding new panel on screen and update position_of variable
+                position_of = position;
+                transaction = getSupportFragmentManager().beginTransaction();
+                transaction.add(R.id.main_activity_placeholder, new MusicPlayerFragment(), String.valueOf(position)).commitNow();
+                return true;
+            }
+        });
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                removeMusicPanel();
+            }
+        });
     }
 
 
@@ -113,72 +179,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mainActivityUserInput.setText("");
                 InputMethodManager inputManager = (InputMethodManager)
                         getSystemService(Context.INPUT_METHOD_SERVICE);
-                inputManager.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT,0);
+                inputManager.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0);
                 return true;
             }
         };
     }
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
 
-        try {
-            // Customise the styling of the base map using a JSON object defined
-            // in a raw resource file.
-            boolean success = googleMap.setMapStyle(
-                    MapStyleOptions.loadRawResourceStyle(
-                            this, R.raw.style_json));
-
-            if (!success) {
-                Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, "Style parsing failed.");
-            }
-        } catch (Resources.NotFoundException e) {
-            Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, "Can't find style. Error: ", e);
-        }
-
-        if (ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-
-            return;
-        }
-        mMap.setMyLocationEnabled(true);
-        mMap.getUiSettings().setZoomControlsEnabled(true);
-        mMap.getUiSettings().setRotateGesturesEnabled(false);
-
-        positionOfTheMap();
-
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                int position = (int) (marker.getTag());
-                marker.showInfoWindow();
-                //todo player implementation
-                removeMusicPanel();
-                position_of = position;
-                transaction = getSupportFragmentManager().beginTransaction();
-                transaction.add(R.id.main_activity_placeholder, new MusicPlayerFragment(), String.valueOf(position)).commitNow();
-                return true;
-            }
-        });
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng latLng) {
-                removeMusicPanel();
-            }
-        });
-    }
-
-    private class ParseTask extends AsyncTask<Void, Void, String> {
+    private class ParseTask extends AsyncTask<Void, Void, Integer> {
 
         HttpURLConnection urlConnection;
         BufferedReader reader;
@@ -198,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         @Override
-        protected String doInBackground(Void... params) {
+        protected Integer doInBackground(Void... params) {
             if (userInput != null) {
                 try {
                     URL url = new URL(Constants.MAIN_ACTIVITY_JSON_API_URL
@@ -224,19 +232,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                String returning = resultJson;
+
                 Log.d(Constants.MAIN_ACTIVITY_DEBUG_TAG, resultJson);
                 if (resultJson != null) {
                     JSONObject dataJsonObj = null;
+                    int totalResultsCount = 0;
 
                     try {
                         dataJsonObj = new JSONObject(resultJson);
+                        totalResultsCount = dataJsonObj.getInt("totalResultsCount");
                         JSONArray geonames = dataJsonObj.getJSONArray("geonames");
 
                         for (int i = 0; i < geonames.length(); i++) {
                             JSONObject object = geonames.getJSONObject(i);
 
                             if (!dataJsonObj.isNull("geonames"))
+                                //saving data from JSON
                                 ArrayData.getInstance().addItemToArray(new GMapMarkersObject(
                                         object.getDouble("lat"),
                                         object.getDouble("lng"),
@@ -253,40 +264,34 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         e.printStackTrace();
                     }
 
-                    return returning;
+                    return totalResultsCount;
                 }
             }
-            return "err 3";
+            return -1;
         }
-
 
         @Override
-        protected void onPostExecute(String strJson) {
-            super.onPostExecute(strJson);
-            JSONObject dataJsonObj = null;
-            try {
-                dataJsonObj = new JSONObject(resultJson);
-                JSONArray geonames = dataJsonObj.getJSONArray("geonames");
-                int totalResultsCount = dataJsonObj.getInt("totalResultsCount");
+        protected void onPostExecute(Integer totalResultsCount) {
+            super.onPostExecute(totalResultsCount);
+            if (totalResultsCount != -1) {
                 Toast.makeText(MainActivity.this, "Total Results Count:" + totalResultsCount, Toast.LENGTH_SHORT).show();
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
 
-            for (int j = 0; j < ArrayData.getInstance().getArraySize(); j++) {
-                GMapMarkersObject marker = ArrayData.getInstance().getItemByPosition(j);
-                LatLng sydney = new LatLng(marker.getLat(), marker.getLng());
-                Marker mark = mMap.addMarker(new MarkerOptions()
-                        .position(sydney)
-                        .title(marker.getName())
-                        .snippet(marker.getToponymName())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
-                );
-                mark.setTag(j);
-            }
-            positionOfTheMap();
+                // adding markers on map
+                for (int j = 0; j < ArrayData.getInstance().getArraySize(); j++) {
+                    GMapMarkersObject marker = ArrayData.getInstance().getItemByPosition(j);
+                    LatLng sydney = new LatLng(marker.getLat(), marker.getLng());
+                    Marker mark = mMap.addMarker(new MarkerOptions()
+                            .position(sydney)
+                            .title(marker.getName())
+                            .snippet(marker.getToponymName())
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+                    );
+                    mark.setTag(j);
+                }
+                //after adding markers setup camera on country(Ukraine)
+                positionOfTheMap();
+            } else Toast.makeText(MainActivity.this, "Nothing found", Toast.LENGTH_SHORT).show();
         }
-
 
     }
 
@@ -306,4 +311,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.moveCamera(update);
         mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(50.45466, 30.5238)));
     }
+
 }
