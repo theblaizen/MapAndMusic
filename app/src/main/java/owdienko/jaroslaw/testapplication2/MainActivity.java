@@ -273,7 +273,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         @Override
         protected void onPostExecute(Integer totalResultsCount) {
             super.onPostExecute(totalResultsCount);
-            if (totalResultsCount != -1) {
+            if (!(totalResultsCount < 1)) {
                 Toast.makeText(MainActivity.this, "Total Results Count:" + totalResultsCount, Toast.LENGTH_SHORT).show();
 
                 // adding markers on map
