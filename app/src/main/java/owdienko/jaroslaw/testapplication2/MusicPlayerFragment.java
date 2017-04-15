@@ -26,16 +26,7 @@ public class MusicPlayerFragment extends Fragment {
     private MediaPlayer fragmentPlayerMediaPlayer;
     private SeekBar fragmentPlayerSeekBar;
 
-    private int[] musicList = {
-            R.raw.ramin_djawadi_westworld_ost,
-            R.raw.kaleo_way_down_we_go,
-            R.raw.the_lord_of_the_rings_the_shire,
-            R.raw.bach_suite_cello_solo_in_g_major,
-            R.raw.dustin_ohalloran_opus,
-            R.raw.hans_zimmer_interstellar_main_theme,
-            R.raw.sting_shape_of_my_heart,
-            R.raw.tstm_was_it_a_dream
-    };
+
 
     private final Handler handler = new Handler();
 
@@ -75,7 +66,7 @@ public class MusicPlayerFragment extends Fragment {
         fragmentPlayerBtnPause = (ImageButton) fragmentView.findViewById(R.id.pause_button);
         fragmentPlayerSeekBar = (SeekBar) fragmentView.findViewById(R.id.seekBar);
 
-        fragmentPlayerMediaPlayer = MediaPlayer.create(getContext(), musicList[new Random().nextInt(musicList.length)]);
+        fragmentPlayerMediaPlayer = MediaPlayer.create(getContext(), Constants.MUSIC_LIST[new Random().nextInt(Constants.MUSIC_LIST.length)]);
         fragmentPlayerSeekBar.setMax(fragmentPlayerMediaPlayer.getDuration());
     }
 
